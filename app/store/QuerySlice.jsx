@@ -1,3 +1,4 @@
+"use client"
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -7,8 +8,7 @@ export const executeQuery = createAsyncThunk(
   async (queryText, { rejectWithValue }) => {
     try {
       const apiKey = "AIzaSyC_6z96oR53D0HbhGJT5NOwy8PsSC1Zf6w";
-      const apiUrl =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+      const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
       const response = await axios.post(
         `${apiUrl}?key=${apiKey}`,
@@ -32,12 +32,71 @@ export const executeQuery = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response ? error.response.data : "Query failed"
-      );
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        "Query failed";
+      return rejectWithValue(errorMessage);
     }
   }
 );
+
+const parseAIResponseToData = (aiResponse) => {
+  try {
+    // Try to parse JSON from the AI response
+    const parsedData = JSON.parse(aiResponse);
+
+    // Validate the parsed data
+    if (Array.isArray(parsedData) && parsedData.length > 0) {
+      // Check if the data has the required structure
+      const firstItem = parsedData[0];
+      const keys = Object.keys(firstItem);
+
+      if (keys.length >= 2) {
+        const nameKey = keys[0];
+        const valueKey = keys[1];
+
+        return {
+          data: parsedData.map((item) => ({
+            [nameKey]: item[nameKey],
+            [valueKey]: Number(item[valueKey]),
+          })),
+          insights: ["Data parsed successfully from AI response"],
+          type: "graph",
+          dataType: valueKey,
+        };
+      }
+    }
+  } catch (parseError) {
+    // If JSON parsing fails, try to extract structured data from text
+    const lines = aiResponse.split("\n").filter((line) => line.trim());
+    const dataEntries = lines
+      .map((line) => {
+        const match = line.match(/([^:]+):\s*(\d+)/);
+        return match
+          ? { name: match[1].trim(), value: Number(match[2]) }
+          : null;
+      })
+      .filter((entry) => entry !== null);
+
+    if (dataEntries.length > 0) {
+      return {
+        data: dataEntries,
+        insights: ["Data extracted from AI response text"],
+        type: "graph",
+        dataType: "value",
+      };
+    }
+  }
+
+  // If no parseable data found, return text insights
+  return {
+    data: null,
+    insights: aiResponse.split("\n").filter((line) => line.trim()),
+    type: "text",
+  };
+};
 
 const querySlice = createSlice({
   name: "query",
@@ -51,6 +110,7 @@ const querySlice = createSlice({
   reducers: {
     setCurrentQuery: (state, action) => {
       state.currentQuery = action.payload;
+      state.error = null;
     },
     submitQuery: (state) => {
       state.isLoading = true;
@@ -58,15 +118,31 @@ const querySlice = createSlice({
     },
     setQueryResults: (state, action) => {
       state.isLoading = false;
-      state.results = action.payload;
-      state.queries.push({
-        query: state.currentQuery,
-        timestamp: new Date().toLocaleString(),
-      });
+      if (action.payload.queries) {
+        state.queries = action.payload.queries;
+      } else {
+        state.results = action.payload;
+        // Add new query to history
+        const newQuery = {
+          query: state.currentQuery,
+          timestamp: new Date().toLocaleString(),
+          id: Date.now().toString(),
+        };
+        state.queries = [newQuery, ...state.queries].slice(0, 10);
+      }
     },
     setQueryError: (state, action) => {
       state.isLoading = false;
       state.error = action.payload;
+      state.results = {
+        data: null,
+        insights: [
+          "API request failed. Unable to process query.",
+          "Error details: " + action.payload,
+          "Please try a different query or check your input.",
+        ],
+        type: "text",
+      };
     },
   },
   extraReducers: (builder) => {
@@ -77,11 +153,30 @@ const querySlice = createSlice({
       })
       .addCase(executeQuery.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Process API response here
+        const aiResponse =
+          action.payload.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const processedResults = parseAIResponseToData(aiResponse);
+        state.results = processedResults;
+        // Add new query to history
+        const newQuery = {
+          query: state.currentQuery,
+          timestamp: new Date().toLocaleString(),
+          id: Date.now().toString(),
+        };
+        state.queries = [newQuery, ...state.queries].slice(0, 10);
       })
       .addCase(executeQuery.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+        state.results = {
+          data: null,
+          insights: [
+            "API request failed. Unable to process query.",
+            "Error details: " + action.payload,
+            "Please try a different query or check your input.",
+          ],
+          type: "text",
+        };
       });
   },
 });

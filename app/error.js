@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -32,8 +30,8 @@ export default function Error({ error, reset }) {
             Oops! Something Went Wrong
           </h1>
           <p className="text-gray-600 mb-6">
-            We encountered an unexpected error. Don't worry, our AI is working
-            hard to fix it.
+            We encountered an unexpected error. Don&apos;t worry, our AI is
+            working hard to fix it.
           </p>
 
           <div className="space-y-4">

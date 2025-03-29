@@ -1,37 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Growth_Gear
 
-## Getting Started
+A Next.js-powered analytics dashboard that transforms business queries into actionable insights using AI and interactive visualizations.
 
-First, run the development server:
-
+## Quick Start
 ```bash
+# Install dependencies
+npm install
+
+# Set up environment
+echo "NEXT_PUBLIC_GEMINI_API_KEY=your_api_key_here" > .env.local
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
+- 📊 Interactive Line/Bar charts
+- 🤖 AI-powered insights (Gemini API)
+- 🔍 Natural language queries
+- 💾 Persistent query history
+- 📱 Responsive design
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Tech Stack
+- Next.js 14
+- React
+- Redux
+- Tailwind CSS
+- Recharts
+- Google Gemini API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Data Formats
 
-## Learn More
+### JSON Array
+```json
+[
+  {"label": "Product A", "value": 15000},
+  {"label": "Product B", "value": 25000}
+]
+```
 
-To learn more about Next.js, take a look at the following resources:
+### JSON Object
+```json
+{
+  "data": [
+    {"label": "Product A", "value": 15000},
+    {"label": "Product B", "value": 25000}
+  ],
+  "insights": ["Product B shows higher revenue"],
+  "type": "graph",
+  "dataType": "revenue"
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### CSV
+```csv
+label,value
+Product A,15000
+Product B,25000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Data Types
+- revenue ($)
+- percentage (%)
+- value (plain)
+- margin (%)
+- sales ($)
+- score (0-100)
+- count (whole)
+- cac ($)
+- profit ($)
 
-## Deploy on Vercel
+## Project Structure
+```
+gen-ai-analytics-dashboard/
+├── app/
+│   ├── page.js              # Dashboard
+│   └── layout.js            # Layout
+├── store/
+│   └── QuerySlice.js        # Redux store
+└── public/                  # Assets
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# Growth_Gear
+## License
+MIT
